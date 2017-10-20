@@ -287,7 +287,7 @@ sub Aqicn_Get($$@) {
         return undef;
         
     } elsif( $cmd eq 'stationSearchByCity' ) {
-        return "usage: $cmd" if( @args != 1 );
+        return "usage: $cmd" if( @args == 0 );
         
         my $city = join( " ", @args );
         my $ret;
@@ -336,11 +336,11 @@ sub Aqicn_GetData($;$) {
         $uri        = $host . '/feed/@' . $hash->{UID} . '/?token=' . $token;
     
     } else {
-        $uri        = $host . '/search/?token=' . $token . '&keyword=' . $cityName;
+        $uri        = $host . '/search/?token=' . $token . '&keyword=' . urlEncode($cityName);
     }
 
     my $param = {
-            url         => "https://" . $uri,
+            url         => "https://".$uri,
             timeout     => 5,
             method      => 'GET',
             hash        => $hash,
@@ -351,7 +351,7 @@ sub Aqicn_GetData($;$) {
     $param->{cl} = $hash->{CL} if( $hash->{TOKEN} and ref($hash->{CL}) eq 'HASH' );
     
     HttpUtils_NonblockingGet($param);
-    Log3 $name, 4, "Aqicn ($name) - Send with URI: https://$uri";
+    Log3 $name, 3, "Aqicn ($name) - Send with URI: https://$uri";
 }
 
 sub Aqicn_ErrorHandling($$$) {
@@ -362,6 +362,11 @@ sub Aqicn_ErrorHandling($$$) {
     my $name                = $hash->{NAME};
     
 
+    #Log3 $name, 3, "Aqicn ($name) - Recieve JSON data: $data";
+    #Log3 $name, 3, "Aqicn ($name) - Recieve HTTP Code: $param->{code}";
+    #Log3 $name, 3, "Aqicn ($name) - Recieve Error: $err";
+    
+    
     ### Begin Error Handling
     
     if( defined( $err ) ) {
@@ -433,7 +438,8 @@ sub Aqicn_ResponseProcessing($$$) {
     if($@){
         Log3 $name, 4, "Aqicn ($name) - error while request: $@";
         readingsBeginUpdate($hash);
-        readingsBulkUpdate($hash, 'JSON Error', $@);
+        readingsBulkUpdate($hash, 'JSON_Error', $@);
+        readingsBulkUpdate($hash, 'httpCode', $param->{code});
         readingsBulkUpdate($hash, 'state', 'JSON error');
         readingsEndUpdate($hash,1);
         return;
@@ -525,11 +531,12 @@ sub Aqicn_ReadingsProcessing_SearchStationResponse($$) {
                 $ret .= '</tr>';
                 $linecount++;
             }
-        
-            $ret .= '</table></td></tr>';
-            $ret .= '</table></html>';
         }
+        
+        $ret .= '</table></td></tr>';
+        $ret .= '</table></html>';
 
+        #printf "\n\n$ret\n\n";
         asyncOutput( $param->{cl}, $ret ) if( $param->{cl} && $param->{cl}{canAsyncOutput} );
         return;
     }
