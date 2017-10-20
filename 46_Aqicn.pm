@@ -67,7 +67,7 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.0.33";
+my $version = "0.0.36";
 
 
 
@@ -86,7 +86,7 @@ sub Aqicn_ReadingsProcessing_AqiResponse($);
 sub Aqicn_ErrorHandling($$$);
 sub Aqicn_WriteReadings($$);
 sub Aqicn_Timer_GetData($);
-sub Aqicn_AirPollutionLevel($);
+sub Aqicn_AirPollutionLevel($$);
 
 
 
@@ -114,6 +114,7 @@ sub Aqicn_Initialize($) {
     $hash->{AttrFn}     = "Aqicn_Attr";
     $hash->{AttrList}   = "interval ".
                           "disable:1 ".
+                          "language:de,en".
                           $readingFnAttributes;
     
     foreach my $d(sort keys %{$modules{Aqicn}{defptr}}) {
@@ -360,13 +361,12 @@ sub Aqicn_ErrorHandling($$$) {
     
     my $hash                = $param->{hash};
     my $name                = $hash->{NAME};
-    
 
-    #Log3 $name, 3, "Aqicn ($name) - Recieve JSON data: $data";
+
+    Log3 $name, 4, "Aqicn ($name) - Recieve JSON data: $data";
     #Log3 $name, 3, "Aqicn ($name) - Recieve HTTP Code: $param->{code}";
     #Log3 $name, 3, "Aqicn ($name) - Recieve Error: $err";
-    
-    
+
     ### Begin Error Handling
     
     if( defined( $err ) ) {
@@ -473,7 +473,7 @@ sub Aqicn_WriteReadings($$) {
         readingsBulkUpdate($hash,$r,$v);
     }
     
-    readingsBulkUpdateIfChanged($hash,'state',Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'}));
+    readingsBulkUpdateIfChanged($hash,'state',Aqicn_AirPollutionLevel($hash,$readings->{'PM2.5-AQI'}));
     readingsEndUpdate($hash,1);
 }
 
@@ -508,7 +508,8 @@ sub Aqicn_ReadingsProcessing_SearchStationResponse($$) {
                 } else {
                     $ret .= '<tr class="odd">';
                 }
-                
+
+                $dataset->{station}{name} =~ s/'//g;
                 $ret .= "<td>".encode_utf8($dataset->{station}{name})."</td>";
                 $ret .= "<td>$dataset->{'time'}{stime}</td>";
                 $ret .= "<td>$dataset->{station}{geo}[0]</td>";
@@ -536,7 +537,6 @@ sub Aqicn_ReadingsProcessing_SearchStationResponse($$) {
         $ret .= '</table></td></tr>';
         $ret .= '</table></html>';
 
-        #printf "\n\n$ret\n\n";
         asyncOutput( $param->{cl}, $ret ) if( $param->{cl} && $param->{cl}{canAsyncOutput} );
         return;
     }
@@ -562,22 +562,43 @@ sub Aqicn_ReadingsProcessing_AqiResponse($) {
     return \%readings;
 }
 
-sub Aqicn_AirPollutionLevel($) {
+sub Aqicn_AirPollutionLevel($$) {
 
-    my $aqi     = shift;
-    
+    my ($hash,$aqi)     = @_;
+    my $name            = $hash->{NAME};
     my $apl;
+
+
+    if($aqi < 51)       { $apl = "Good"}
+    elsif($aqi < 101)   { $apl = "Moderate"}
+    elsif($aqi < 151)   { $apl = "Unhealthy for Sensitive Groups"}
+    elsif($aqi < 201)   { $apl = "Unhealthy"}
+    elsif($aqi < 301)   { $apl = "Very Unhealthy"}
+    else                { $apl = "Hazardous"}
+
+
+    if( (AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en' ) {
+        return Aqicn_i18n_de($apl);
+    } else {
+        return $apl;
+    }
+}
+
+sub Aqicn_i18n_de($) {
+
+    my $value = shift;
     
     
-    if($aqi < 50)       { $apl = "Good"}
-    elsif($aqi < 100)   { $apl = "Moderate"}
-    elsif($aqi < 150)   { $apl = "Unhealthy for Sensitive Groups"}
-    elsif($aqi < 200)   { $apl = "Unhealthy"}
-    elsif($aqi < 300)   { $apl = "Very Unhealthy"}
-    elsif($aqi < 400)   { $apl = "Hazardous"}
-    elsif($aqi < 500)   { $apl = "Hazardous"}
+    my %i18nde = (
+                    'Good'                              => 'Gut',
+                    'Moderate'                          => 'Moderat',
+                    'Unhealthy for Sensitive Groups'    => 'Ungesund für empfindliche Personengruppen',
+                    'Unhealthy'                         => 'Ungesund',
+                    'Very Unhealthy'                    => 'Sehr ungesund',
+                    'Hazardous'                         => 'Gefährlich'
+    );
     
-    return $apl
+    return $i18nde{$value};
 }
 
 
