@@ -67,7 +67,7 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.0.44";
+my $version = "0.0.49";
 
 
 
@@ -87,6 +87,11 @@ sub Aqicn_ErrorHandling($$$);
 sub Aqicn_WriteReadings($$);
 sub Aqicn_Timer_GetData($);
 sub Aqicn_AirPollutionLevel($$);
+sub Aqicn_HtmlStyle($);
+sub Aqicn_i18n_de($);
+sub Aqicn_i18n_en($);
+
+
 
 
 
@@ -473,8 +478,8 @@ sub Aqicn_WriteReadings($$) {
         readingsBulkUpdate($hash,$r,$v);
     }
     
-    readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.Aqicn_HtmlStyle($readings->{'PM2.5-AQI'}).';">'.Aqicn_AirPollutionLevel($hash,$readings->{'PM2.5-AQI'}).': '.$readings->{'PM2.5-AQI'}.'</div>');
-    readingsBulkUpdateIfChanged($hash,'state',Aqicn_AirPollutionLevel($hash,$readings->{'PM2.5-AQI'}));
+    readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.Aqicn_HtmlStyle($readings->{'AQI'}).';">'.Aqicn_AirPollutionLevel($hash,$readings->{'AQI'}).': '.$readings->{'AQI'}.'</div>');
+    readingsBulkUpdateIfChanged($hash,'state',Aqicn_AirPollutionLevel($hash,$readings->{'AQI'}).': '.$readings->{'AQI'});
     readingsEndUpdate($hash,1);
 }
 
@@ -550,16 +555,21 @@ sub Aqicn_ReadingsProcessing_AqiResponse($) {
     my %readings;
 
 
-    $readings{'CO-AQI'} = $decode_json->{data}{iaqi}{co}{v};
-    $readings{'NO2-AQI'} = $decode_json->{data}{iaqi}{no2}{v};
-    $readings{'PM10-AQI'} = $decode_json->{data}{iaqi}{pm10}{v};
-    $readings{'PM2.5-AQI'} = $decode_json->{data}{iaqi}{pm25}{v};
-    $readings{'temperature'} = $decode_json->{data}{iaqi}{t}{v};
-    $readings{'pressure'} = $decode_json->{data}{iaqi}{p}{v};
-    $readings{'humidity'} = $decode_json->{data}{iaqi}{h}{v};
-    $readings{'status'} = $decode_json->{status};
-    $readings{'pubDate'} = $decode_json->{data}{time}{s};
-    
+    $readings{'CO-AQI'}         = $decode_json->{data}{iaqi}{co}{v};
+    $readings{'NO2-AQI'}        = $decode_json->{data}{iaqi}{no2}{v};
+    $readings{'PM10-AQI'}       = $decode_json->{data}{iaqi}{pm10}{v};
+    $readings{'PM2.5-AQI'}      = $decode_json->{data}{iaqi}{pm25}{v};
+    $readings{'AQI'}            = $decode_json->{data}{aqi};
+    $readings{'temperature'}    = $decode_json->{data}{iaqi}{t}{v};
+    $readings{'pressure'}       = $decode_json->{data}{iaqi}{p}{v};
+    $readings{'humidity'}       = $decode_json->{data}{iaqi}{h}{v};
+    $readings{'status'}         = $decode_json->{status};
+    $readings{'pubDate'}        = $decode_json->{data}{time}{s};
+    $readings{'pubUnixTime'}    = $decode_json->{data}{time}{v};
+    $readings{'pubTimezone'}    = $decode_json->{data}{time}{tz};
+    $readings{'windSpeed'}      = $decode_json->{data}{iaqi}{w}{v};
+    $readings{'windDirection'}  = $decode_json->{data}{iaqi}{wd}{v};
+
     return \%readings;
 }
 
