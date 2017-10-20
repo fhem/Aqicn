@@ -287,7 +287,7 @@ sub Aqicn_Get($$@) {
         return undef;
         
     } elsif( $cmd eq 'stationSearchByCity' ) {
-        return "usage: $cmd" if( @args == 0 );
+        return "usage: $cmd" if( @args != 1 );
         
         my $city = join( " ", @args );
         my $ret;
@@ -336,11 +336,11 @@ sub Aqicn_GetData($;$) {
         $uri        = $host . '/feed/@' . $hash->{UID} . '/?token=' . $token;
     
     } else {
-        $uri        = $host . '/search/?token=' . $token . '&keyword=' . urlEncode($cityName);
+        $uri        = $host . '/search/?token=' . $token . '&keyword=' . $cityName;
     }
 
     my $param = {
-            url         => "https://".$uri,
+            url         => "https://" . $uri,
             timeout     => 5,
             method      => 'GET',
             hash        => $hash,
@@ -351,7 +351,7 @@ sub Aqicn_GetData($;$) {
     $param->{cl} = $hash->{CL} if( $hash->{TOKEN} and ref($hash->{CL}) eq 'HASH' );
     
     HttpUtils_NonblockingGet($param);
-    Log3 $name, 3, "Aqicn ($name) - Send with URI: https://$uri";
+    Log3 $name, 4, "Aqicn ($name) - Send with URI: https://$uri";
 }
 
 sub Aqicn_ErrorHandling($$$) {
@@ -362,11 +362,6 @@ sub Aqicn_ErrorHandling($$$) {
     my $name                = $hash->{NAME};
     
 
-    #Log3 $name, 3, "Aqicn ($name) - Recieve JSON data: $data";
-    #Log3 $name, 3, "Aqicn ($name) - Recieve HTTP Code: $param->{code}";
-    #Log3 $name, 3, "Aqicn ($name) - Recieve Error: $err";
-    
-    
     ### Begin Error Handling
     
     if( defined( $err ) ) {
@@ -438,8 +433,7 @@ sub Aqicn_ResponseProcessing($$$) {
     if($@){
         Log3 $name, 4, "Aqicn ($name) - error while request: $@";
         readingsBeginUpdate($hash);
-        readingsBulkUpdate($hash, 'JSON_Error', $@);
-        readingsBulkUpdate($hash, 'httpCode', $param->{code});
+        readingsBulkUpdate($hash, 'JSON Error', $@);
         readingsBulkUpdate($hash, 'state', 'JSON error');
         readingsEndUpdate($hash,1);
         return;
@@ -531,12 +525,11 @@ sub Aqicn_ReadingsProcessing_SearchStationResponse($$) {
                 $ret .= '</tr>';
                 $linecount++;
             }
-        }
         
-        $ret .= '</table></td></tr>';
-        $ret .= '</table></html>';
+            $ret .= '</table></td></tr>';
+            $ret .= '</table></html>';
+        }
 
-        #printf "\n\n$ret\n\n";
         asyncOutput( $param->{cl}, $ret ) if( $param->{cl} && $param->{cl}{canAsyncOutput} );
         return;
     }
@@ -548,16 +541,34 @@ sub Aqicn_ReadingsProcessing_AqiResponse($) {
 
     my %readings;
 
-
+    $readings{'attribution-01-name'} = $decode_json->{data}{attributions}{01}{name}{v};
+    $readings{'attribution-01-url'} = $decode_json->{data}{attributions}{01}{url}{v};
+    $readings{'attribution-02-name'} = $decode_json->{data}{attributions}{02}{name}{v};
+    $readings{'attribution-02-url'} = $decode_json->{data}{attributions}{02}{url}{v};
+    $readings{'attribution-03-name'} = $decode_json->{data}{attributions}{03}{name}{v};
+    $readings{'attribution-03-url'} = $decode_json->{data}{attributions}{03}{url}{v}; # there might be more than 3 sources avail for certain cities
+    $readings{'dominat-poll'} = $decode_json->{data}{dominentpol}; # probably irrelevant
+    $readings{'city'} = $decode_json->{data}{city}{name}{v}; # probably already available
+    $readings{'url'} = $decode_json->{data}{city}{url}{v};
+    $readings{'AQI'} = $decode_json->{data}{aqi};  # is the same as PM2.5-AQI
     $readings{'CO-AQI'} = $decode_json->{data}{iaqi}{co}{v};
     $readings{'NO2-AQI'} = $decode_json->{data}{iaqi}{no2}{v};
+    $readings{'O3-AQI'} = $decode_json->{data}{iaqi}{o3}{v};
+    $readings{'SO2-AQI'} = $decode_json->{data}{iaqi}{so2}{v};
     $readings{'PM10-AQI'} = $decode_json->{data}{iaqi}{pm10}{v};
     $readings{'PM2.5-AQI'} = $decode_json->{data}{iaqi}{pm25}{v};
-    $readings{'temperature'} = $decode_json->{data}{iaqi}{t}{v};
-    $readings{'pressure'} = $decode_json->{data}{iaqi}{p}{v};
-    $readings{'humidity'} = $decode_json->{data}{iaqi}{h}{v};
+    $readings{'temperature'} = $decode_json->{data}{iaqi}{t}{v}; # from wunderground.com
+    $readings{'pressure'} = $decode_json->{data}{iaqi}{p}{v}; # from wunderground.com
+    $readings{'humidity'} = $decode_json->{data}{iaqi}{h}{v}; # from wunderground.com
+    $readings{'dew'} = $decode_json->{data}{iaqi}{d}{v}; # from wunderground.com
+    $readings{'wind-speed'} = $decode_json->{data}{iaqi}{w}{v}; # in m/s # from wunderground.com
+    $readings{'wind-direction'} = $decode_json->{data}{iaqi}{wd}{v}; # from wunderground.com
+    $readings{'idx'} = $decode_json->{data}{idx}; # probably already available
+    $readings{'pubDate'} = $decode_json->{data}{time}{s}; # should be local time at city <-> maybe convert with timezone?
+    $readings{'timezone'} = $decode_json->{data}{time}{tz}; 
+    $readings{'epoch-time'} = $decode_json->{data}{time}{v}; # could be used to convert to time at FHEM server
     $readings{'status'} = $decode_json->{status};
-    $readings{'pubDate'} = $decode_json->{data}{time}{s};
+    
     
     return \%readings;
 }
