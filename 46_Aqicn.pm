@@ -67,7 +67,7 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.0.36";
+my $version = "0.0.44";
 
 
 
@@ -352,7 +352,7 @@ sub Aqicn_GetData($;$) {
     $param->{cl} = $hash->{CL} if( $hash->{TOKEN} and ref($hash->{CL}) eq 'HASH' );
     
     HttpUtils_NonblockingGet($param);
-    Log3 $name, 3, "Aqicn ($name) - Send with URI: https://$uri";
+    Log3 $name, 4, "Aqicn ($name) - Send with URI: https://$uri";
 }
 
 sub Aqicn_ErrorHandling($$$) {
@@ -473,6 +473,7 @@ sub Aqicn_WriteReadings($$) {
         readingsBulkUpdate($hash,$r,$v);
     }
     
+    readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.Aqicn_HtmlStyle($readings->{'PM2.5-AQI'}).';">'.Aqicn_AirPollutionLevel($hash,$readings->{'PM2.5-AQI'}).': '.$readings->{'PM2.5-AQI'}.'</div>');
     readingsBulkUpdateIfChanged($hash,'state',Aqicn_AirPollutionLevel($hash,$readings->{'PM2.5-AQI'}));
     readingsEndUpdate($hash,1);
 }
@@ -569,19 +570,35 @@ sub Aqicn_AirPollutionLevel($$) {
     my $apl;
 
 
-    if($aqi < 51)       { $apl = "Good"}
-    elsif($aqi < 101)   { $apl = "Moderate"}
-    elsif($aqi < 151)   { $apl = "Unhealthy for Sensitive Groups"}
-    elsif($aqi < 201)   { $apl = "Unhealthy"}
-    elsif($aqi < 301)   { $apl = "Very Unhealthy"}
-    else                { $apl = "Hazardous"}
+    if($aqi < 51)       { $apl = 1}
+    elsif($aqi < 101)   { $apl = 2}
+    elsif($aqi < 151)   { $apl = 3}
+    elsif($aqi < 201)   { $apl = 4}
+    elsif($aqi < 301)   { $apl = 5}
+    else                { $apl = 6}
 
 
     if( (AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en' ) {
         return Aqicn_i18n_de($apl);
     } else {
-        return $apl;
+        return Aqicn_i18n_en($apl);
     }
+}
+
+sub Aqicn_HtmlStyle($) {
+
+    my $aqi         = shift;
+    my $bgColor;
+
+
+    if($aqi < 51)       { $bgColor = '#009966'}
+    elsif($aqi < 101)   { $bgColor = '#ffde33'}
+    elsif($aqi < 151)   { $bgColor = '#ff9933'}
+    elsif($aqi < 201)   { $bgColor = '#cc0033'}
+    elsif($aqi < 301)   { $bgColor = '#660099'}
+    else                { $bgColor = '#7e0023'}
+
+    return $bgColor;
 }
 
 sub Aqicn_i18n_de($) {
@@ -590,16 +607,34 @@ sub Aqicn_i18n_de($) {
     
     
     my %i18nde = (
-                    'Good'                              => 'Gut',
-                    'Moderate'                          => 'Moderat',
-                    'Unhealthy for Sensitive Groups'    => 'Ungesund für empfindliche Personengruppen',
-                    'Unhealthy'                         => 'Ungesund',
-                    'Very Unhealthy'                    => 'Sehr ungesund',
-                    'Hazardous'                         => 'Gefährlich'
+                    1   => 'Gut',
+                    2   => 'Moderat',
+                    3   => 'Ungesund für empfindliche Personengruppen',
+                    4   => 'Ungesund',
+                    5   => 'Sehr ungesund',
+                    6   => 'Gefährlich'
     );
     
     return $i18nde{$value};
 }
+
+sub Aqicn_i18n_en($) {
+
+    my $value = shift;
+    
+    
+    my %i18nen = (
+                    1   => 'Good',
+                    2   => 'Moderate',
+                    3   => 'Unhealthy for Sensitive Groups',
+                    4   => 'Unhealthy',
+                    5   => 'Very Unhealthy',
+                    6   => 'Hazardous'
+    );
+    
+    return $i18nen{$value};
+}
+
 
 
 
@@ -610,70 +645,22 @@ sub Aqicn_i18n_de($) {
 =pod
 
 =item device
-=item summary       Modul to retrieves data from a Tesla Powerwall 2AC
-=item summary_DE 
+=item summary
+=item summary_DE
 
 =begin html
 
 <a name="Aqicn"></a>
-<h3>Tesla Powerwall 2 AC</h3>
+<h3></h3>
 <ul>
-    <u><b>Aqicn - Retrieves data from a Tesla Powerwall 2AC System</b></u>
-    <br>
-    With this module it is possible to read the data from a Tesla Powerwall 2AC and to set it as reading.
-    <br><br>
-    <a name="Aqicndefine"></a>
-    <b>Define</b>
-    <ul><br>
-        <code>define &lt;name&gt; Aqicn &lt;HOST&gt;</code>
-    <br><br>
-    Example:
-    <ul><br>
-        <code>define myPowerWall Aqicn 192.168.1.34</code><br>
-    </ul>
-    <br>
-    This statement creates a Device with the name myPowerWall and the Host IP 192.168.1.34.<br>
-    After the device has been created, the current data of Powerwall is automatically read from the device.
-    </ul>
-    <br><br>
-    <a name="Aqicnreadings"></a>
-    <b>Readings</b>
-    <ul>
-        <li>actionQueue     - information about the entries in the action queue</li>
-        <li>aggregates-*    - readings of the /api/meters/aggregates response</li>
-        <li>batteryLevel    - battery level in percent</li>
-        <li>batteryPower    - battery capacity in kWh</li>
-        <li>powerwalls-*    - readings of the /api/powerwalls response</li>
-        <li>registration-*  - readings of the /api/customer/registration response</li>
-        <li>siteinfo-*      - readings of the /api/site_info response</li>
-        <li>sitemaster-*    - readings of the /api/sitemaster response</li>
-        <li>state           - information about internel modul processes</li>
-        <li>status-*        - readings of the /api/status response</li>
-        <li>statussoe-*     - readings of the /api/system_status/soe response</li>
-    </ul>
-    <a name="Aqicnget"></a>
-    <b>get</b>
-    <ul>
-        <li>aggregates      - fetch data from url path /api/meters/aggregates</li>
-        <li>powerwalls      - fetch data from url path /api/powerwalls</li>
-        <li>registration    - fetch data from url path /api/customer/registration</li>
-        <li>siteinfo        - fetch data from url path /api/site_info</li>
-        <li>sitemaster      - fetch data from url path /api/sitemaster</li>
-        <li>status          - fetch data from url path /api/status</li>
-        <li>statussoe       - fetch data from url path /api/system_status/soe</li>
-    </ul>
-    <a name="Aqicnattribute"></a>
-    <b>Attribute</b>
-    <ul>
-        <li>interval - interval in seconds for automatically fetch data (default 300)</li>
-    </ul>
+
 </ul>
 
 =end html
 =begin html_DE
 
 <a name="Aqicn"></a>
-<h3>Tesla Powerwall 2 AC</h3>
+<h3></h3>
 
 =end html_DE
 =cut
