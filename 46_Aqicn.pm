@@ -67,7 +67,7 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.0.49";
+my $version = "0.0.50";
 
 
 
@@ -119,7 +119,7 @@ sub Aqicn_Initialize($) {
     $hash->{AttrFn}     = "Aqicn_Attr";
     $hash->{AttrList}   = "interval ".
                           "disable:1 ".
-                          "language:de,en".
+                          "language:de,en ".
                           $readingFnAttributes;
     
     foreach my $d(sort keys %{$modules{Aqicn}{defptr}}) {
@@ -531,6 +531,8 @@ sub Aqicn_ReadingsProcessing_SearchStationResponse($$) {
 
                 # create define Link
                 my @headerHost = grep /Origin/, @FW_httpheader;
+                $headerHost[0] = 'Origin: no Hostname at FHEMWEB Header available'
+                unless( defined($headerHost[0]) );
                 $headerHost[0] =~ m/Origin:.([^\s]*)/;
                 $headerHost[0] = $1;
                 $aHref="<a href=\"".$headerHost[0]."/fhem?cmd=define+".makeDeviceName($dataset->{station}{name})."+Aqicn+".$dataset->{uid}.$FW_CSRF."\">Create Station Device</a>";
@@ -560,6 +562,8 @@ sub Aqicn_ReadingsProcessing_AqiResponse($) {
     $readings{'PM10-AQI'}       = $decode_json->{data}{iaqi}{pm10}{v};
     $readings{'PM2.5-AQI'}      = $decode_json->{data}{iaqi}{pm25}{v};
     $readings{'AQI'}            = $decode_json->{data}{aqi};
+    $readings{'O3-AQI'}         = $decode_json->{data}{iaqi}{o3}{v};
+    $readings{'SO2-AQI'}        = $decode_json->{data}{iaqi}{so2}{v};
     $readings{'temperature'}    = $decode_json->{data}{iaqi}{t}{v};
     $readings{'pressure'}       = $decode_json->{data}{iaqi}{p}{v};
     $readings{'humidity'}       = $decode_json->{data}{iaqi}{h}{v};
@@ -569,6 +573,7 @@ sub Aqicn_ReadingsProcessing_AqiResponse($) {
     $readings{'pubTimezone'}    = $decode_json->{data}{time}{tz};
     $readings{'windSpeed'}      = $decode_json->{data}{iaqi}{w}{v};
     $readings{'windDirection'}  = $decode_json->{data}{iaqi}{wd}{v};
+    $readings{'dominatPoll'}    = $decode_json->{data}{dominentpol};
 
     return \%readings;
 }
