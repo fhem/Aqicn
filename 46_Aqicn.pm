@@ -39,15 +39,6 @@
 #
 #######
 #######
-#  URLs zum Abrufen diverser Daten
-# http://<ip-Powerwall>/api/system_status/soe 
-# http://<ip-Powerwall>/api/meters/aggregates
-# http://<ip-Powerwall>/api/site_info
-# http://<ip-Powerwall>/api/sitemaster
-# http://<ip-Powerwall>/api/powerwalls
-# http://<ip-Powerwall>/api/networks
-# http://<ip-Powerwall>/api/system/networks
-# http://<ip-Powerwall>/api/operation
 #
 ##
 ##
@@ -67,8 +58,20 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.0.50";
+my $version = "0.0.56";
 
+
+
+
+### Air Quality Index scale
+my %AQIS = (
+            1   => { 'i18nde' => 'Gut'                                          ,'i18nen' => 'Good'                             ,'bgcolor' => '#009966'},
+            2   => { 'i18nde' => 'Moderat'                                      ,'i18nen' => 'Moderate'                         ,'bgcolor' => '#ffde33'},
+            3   => { 'i18nde' => 'Ungesund für empfindliche Personengruppen'    ,'i18nen' => 'Unhealthy for Sensitive Groups'   ,'bgcolor' => '#ff9933'},
+            4   => { 'i18nde' => 'Ungesund'                                     ,'i18nen' => 'Unhealthy'                        ,'bgcolor' => '#cc0033'},
+            5   => { 'i18nde' => 'Sehr ungesund'                                ,'i18nen' => 'Very Unhealthy'                   ,'bgcolor' => '#660099'},
+            6   => { 'i18nde' => 'Gefährlich'                                   ,'i18nen' => 'Hazardous'                        ,'bgcolor' => '#7e0023'},
+    );
 
 
 
@@ -86,10 +89,11 @@ sub Aqicn_ReadingsProcessing_AqiResponse($);
 sub Aqicn_ErrorHandling($$$);
 sub Aqicn_WriteReadings($$);
 sub Aqicn_Timer_GetData($);
-sub Aqicn_AirPollutionLevel($$);
+sub Aqicn_AirPollutionLevel($);
 sub Aqicn_HtmlStyle($);
 sub Aqicn_i18n_de($);
 sub Aqicn_i18n_en($);
+sub Aqicn_HealthImplications($$);
 
 
 
@@ -478,8 +482,20 @@ sub Aqicn_WriteReadings($$) {
         readingsBulkUpdate($hash,$r,$v);
     }
     
-    readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.Aqicn_HtmlStyle($readings->{'AQI'}).';">'.Aqicn_AirPollutionLevel($hash,$readings->{'AQI'}).': '.$readings->{'AQI'}.'</div>');
-    readingsBulkUpdateIfChanged($hash,'state',Aqicn_AirPollutionLevel($hash,$readings->{'AQI'}).': '.$readings->{'AQI'});
+    if( defined($readings->{'PM2.5-AQI'}) ) {
+        readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'bgcolor'}.';">'.( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nde'}: $readings->{'PM2.5-AQI'} " : " $AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nen'}: $readings->{'PM2.5-AQI'}").'</div>');
+        
+        readingsBulkUpdateIfChanged($hash,'state',( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nde'}: $readings->{'PM2.5-AQI'}" : "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nen'}: $readings->{'PM2.5-AQI'}") );
+        
+         readingsBulkUpdateIfChanged($hash,'healthImplications',Aqicn_HealthImplications($hash,Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})) );
+    } else {
+        readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'bgcolor'}.';">'.( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nde'}: $readings->{'AQI'} " : " $AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nen'}: $readings->{'AQI'}").'</div>');
+    
+        readingsBulkUpdateIfChanged($hash,'state',( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nde'}: $readings->{'AQI'}" : "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nen'}: $readings->{'AQI'}") );
+        
+        readingsBulkUpdateIfChanged($hash,'healthImplications',Aqicn_HealthImplications($hash,Aqicn_AirPollutionLevel($readings->{'AQI'})) );
+    }
+        
     readingsEndUpdate($hash,1);
 }
 
@@ -578,10 +594,10 @@ sub Aqicn_ReadingsProcessing_AqiResponse($) {
     return \%readings;
 }
 
-sub Aqicn_AirPollutionLevel($$) {
+sub Aqicn_AirPollutionLevel($) {
 
-    my ($hash,$aqi)     = @_;
-    my $name            = $hash->{NAME};
+    my $aqi = shift;
+
     my $apl;
 
 
@@ -591,66 +607,37 @@ sub Aqicn_AirPollutionLevel($$) {
     elsif($aqi < 201)   { $apl = 4}
     elsif($aqi < 301)   { $apl = 5}
     else                { $apl = 6}
-
-
-    if( (AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en' ) {
-        return Aqicn_i18n_de($apl);
-    } else {
-        return Aqicn_i18n_en($apl);
-    }
+    
+    return $apl;
 }
 
-sub Aqicn_HtmlStyle($) {
+sub Aqicn_HealthImplications($$) {
 
-    my $aqi         = shift;
-    my $bgColor;
+    my ($hash,$apl) = @_;
 
+    my $name        = $hash->{NAME};
 
-    if($aqi < 51)       { $bgColor = '#009966'}
-    elsif($aqi < 101)   { $bgColor = '#ffde33'}
-    elsif($aqi < 151)   { $bgColor = '#ff9933'}
-    elsif($aqi < 201)   { $bgColor = '#cc0033'}
-    elsif($aqi < 301)   { $bgColor = '#660099'}
-    else                { $bgColor = '#7e0023'}
-
-    return $bgColor;
+    my %HIen = (
+            1   => 'Air quality is acceptable; however, for some pollutants there may be a moderate health concern for a very small number of people who are unusually sensitive to air pollution.',
+            2   => 'Air quality is acceptable; however, for some pollutants there may be a moderate health concern for a very small number of people who are unusually sensitive to air pollution.',
+            3   => 'Members of sensitive groups may experience health effects. The general public is not likely to be affected.',
+            4   => 'Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects',
+            5   => 'Health warnings of emergency conditions. The entire population is more likely to be affected.',
+            6   => 'Health alert: everyone may experience more serious health effects'
+        );
+        
+     my %HIde = (
+            1   => 'Die Qualität der Luft gilt als zufriedenstellend und die Luftverschmutzung stellt ein geringes oder kein Risiko dar',
+            2   => 'Die Luftqualität ist insgesamt akzeptabel. Bei manchen Schadstoffe besteht jedoch eventuell eine geringe Gesundheitsgefahr für einen sehr kleinen Personenkreis, der sehr empfindlich auf Luftverschmutzung ist.',
+            3   => 'Bei Mitgliedern von empfindlichen Personengruppen können gesundheitliche Auswirkungen auftreten. Die allgemeine Öffentlichkeit ist wahrscheinlich nicht betroffen.',
+            4   => 'Erste gesundheitliche Auswirkungen können sich bei allen Personen einstellen. Bei empfindlichen Personengruppen können ernstere gesundheitliche Auswirkungen auftreten.',
+            5   => 'Gesundheitswarnung aufgrund einer Notfallsituation. Die gesamte Bevölkerung ist voraussichtlich betroffen.',
+            6   => 'Gesundheitsalarm: Jeder muss mit dem Auftreten ernsterer Gesundheitsschäden rechnen'
+        );
+        
+        
+        return ( (AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en' ? $HIde{$apl} : $HIen{$apl} );    
 }
-
-sub Aqicn_i18n_de($) {
-
-    my $value = shift;
-    
-    
-    my %i18nde = (
-                    1   => 'Gut',
-                    2   => 'Moderat',
-                    3   => 'Ungesund für empfindliche Personengruppen',
-                    4   => 'Ungesund',
-                    5   => 'Sehr ungesund',
-                    6   => 'Gefährlich'
-    );
-    
-    return $i18nde{$value};
-}
-
-sub Aqicn_i18n_en($) {
-
-    my $value = shift;
-    
-    
-    my %i18nen = (
-                    1   => 'Good',
-                    2   => 'Moderate',
-                    3   => 'Unhealthy for Sensitive Groups',
-                    4   => 'Unhealthy',
-                    5   => 'Very Unhealthy',
-                    6   => 'Hazardous'
-    );
-    
-    return $i18nen{$value};
-}
-
-
 
 
 
