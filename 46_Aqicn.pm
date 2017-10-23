@@ -58,7 +58,7 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.0.56";
+my $version = "0.1.5";
 
 
 
@@ -169,7 +169,7 @@ sub Aqicn_Define($$) {
         $hash->{HOST}                           = 'api.waqi.info';
         $attr{$name}{room}                      = "AQICN" if( !defined( $attr{$name}{room} ) );
     
-        readingsSingleUpdate ( $hash, "state", "ready", 1 );
+        readingsSingleUpdate ( $hash, "state", "ready for search", 1 );
         
         Log3 $name, 3, "Aqicn ($name) - defined Aqicn Head Device with API-Key $hash->{TOKEN}";
         $modules{Aqicn}{defptr}{TOKEN}         = $hash;
@@ -344,6 +344,7 @@ sub Aqicn_GetData($;$) {
     if( $hash->{UID} ) {
         my $uid     = $hash->{UID};
         $uri        = $host . '/feed/@' . $hash->{UID} . '/?token=' . $token;
+        readingsSingleUpdate($hash,'state','fetch data',1);
     
     } else {
         $uri        = $host . '/search/?token=' . $token . '&keyword=' . urlEncode($cityName);
@@ -381,7 +382,7 @@ sub Aqicn_ErrorHandling($$$) {
     if( defined( $err ) ) {
         if( $err ne "" ) {
             if( $param->{cl} && $param->{cl}{canAsyncOutput} ) {
-                asyncOutput( $param->{cl}, "Request Error: $err\n" );
+                asyncOutput( $param->{cl}, "Request Error: $err\r\n" );
             }
 
             readingsBeginUpdate( $hash );
@@ -390,13 +391,15 @@ sub Aqicn_ErrorHandling($$$) {
             readingsEndUpdate( $hash, 1 );
             
             Log3 $name, 3, "Aqicn ($name) - RequestERROR: $err";
-            
-            $hash->{actionQueue} = [];
+
             return;
         }
     }
 
     if( $data eq "" and exists( $param->{code} ) && $param->{code} ne 200 ) {
+        #if( $param->{cl} && $param->{cl}{canAsyncOutput} ) {
+        #    asyncOutput( $param->{cl}, "Request Error: $param->{code}\r\n" );
+        #}
     
         readingsBeginUpdate( $hash );
         readingsBulkUpdate( $hash, 'state', $param->{code}, 1 );
@@ -409,11 +412,13 @@ sub Aqicn_ErrorHandling($$$) {
     
         Log3 $name, 5, "Aqicn ($name) - RequestERROR: received http code ".$param->{code}." without any data after requesting";
 
-        $hash->{actionQueue} = [];
         return;
     }
 
-    if( ( $data =~ /Error/i ) and exists( $param->{code} ) ) { 
+    if( ( $data =~ /Error/i ) and exists( $param->{code} ) ) {
+        #if( $param->{cl} && $param->{cl}{canAsyncOutput} ) {
+        #    asyncOutput( $param->{cl}, "Request Error: $param->{code}\r\n" );
+        #}
     
         readingsBeginUpdate( $hash );
         
@@ -424,7 +429,6 @@ sub Aqicn_ErrorHandling($$$) {
     
         Log3 $name, 3, "Aqicn ($name) - statusRequestERROR: http error ".$param->{code};
 
-        $hash->{actionQueue} = [];
         return;
         ### End Error Handling
     }
@@ -458,6 +462,7 @@ sub Aqicn_ResponseProcessing($$$) {
     #### Verarbeitung der Readings zum passenden
     if( $hash->{TOKEN} ) {
         Aqicn_ReadingsProcessing_SearchStationResponse($decode_json,$param);
+        readingsSingleUpdate($hash,'state','search finished',1);
         return;
     } elsif( $hash->{UID} ) {
         $readings = Aqicn_ReadingsProcessing_AqiResponse($decode_json);
@@ -507,7 +512,7 @@ sub Aqicn_ReadingsProcessing_SearchStationResponse($$) {
     my ($decode_json,$param)     = @_;
     
     
-    if( $param->{cl} && $param->{cl}->{TYPE} eq 'FHEMWEB' ) {
+    if( $param->{cl} and $param->{cl}->{TYPE} eq 'FHEMWEB' ) {
         
         my $ret = '<html><table><tr><td>';
         $ret .= '<table class="block wide">';
@@ -560,6 +565,16 @@ sub Aqicn_ReadingsProcessing_SearchStationResponse($$) {
         
         $ret .= '</table></td></tr>';
         $ret .= '</table></html>';
+
+        asyncOutput( $param->{cl}, $ret ) if( $param->{cl} and $param->{cl}{canAsyncOutput} );
+        return;
+        
+    } elsif( $param->{cl} and $param->{cl}->{TYPE} eq 'telnet' ) {
+        my $ret = '';
+        
+        foreach my $dataset (@{$decode_json->{data}}) {
+            $ret .= encode_utf8($dataset->{station}{name}) . "| $dataset->{'time'}{stime} | $dataset->{station}{geo}[0] | $dataset->{station}{geo}[1] | define " . makeDeviceName($dataset->{station}{name}) . " Aqicn $dataset->{uid}\r\n";
+        }
 
         asyncOutput( $param->{cl}, $ret ) if( $param->{cl} && $param->{cl}{canAsyncOutput} );
         return;
@@ -638,6 +653,8 @@ sub Aqicn_HealthImplications($$) {
         
         return ( (AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en' ? $HIde{$apl} : $HIen{$apl} );    
 }
+
+
 
 
 
