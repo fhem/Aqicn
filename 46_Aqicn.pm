@@ -604,6 +604,7 @@ sub Aqicn_ReadingsProcessing_AqiResponse($) {
     $readings{'pubTimezone'}    = $decode_json->{data}{time}{tz};
     $readings{'windSpeed'}      = $decode_json->{data}{iaqi}{w}{v};
     $readings{'windDirection'}  = $decode_json->{data}{iaqi}{wd}{v};
+    $readings{'dewpoint'}       = $decode_json->{data}{iaqi}{d}{v};
     $readings{'dominatPoll'}    = $decode_json->{data}{dominentpol};
 
     return \%readings;
