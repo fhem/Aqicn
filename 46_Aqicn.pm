@@ -62,7 +62,7 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.1.8";
+my $version = "0.2.0";
 
 
 
@@ -673,22 +673,76 @@ sub Aqicn_HealthImplications($$) {
 =pod
 
 =item device
-=item summary
-=item summary_DE
+=item summary       Air Quality Index proving a transparent Air Quality information
+=item summary_DE    Air Quality Index Nachweis einer transparenten Luftqualitätsinformation
 
 =begin html
 
 <a name="Aqicn"></a>
-<h3></h3>
+<h3>Air Quality Index</h3>
 <ul>
-
+    This modul fetch Air Quality data from http://aqicn.org.
+    <br><br>
+    <a name="Aqicndefine"></a>
+    <b>Define</b>
+    <ul><br>
+        <code>define &lt;name&gt; Aqicn</code>
+    <br><br>
+    Example:
+    <ul><br>
+        <code>define aqicnMaster Aqicn</code><br>
+    </ul>
+    <br>
+    This statement creates the Aqicn Master Device.<br>
+    After the device has been created, you can search Aqicn Station by city name and create automatically the station device.
+    </ul>
+    <br><br>
+    <a name="Aqicnreadings"></a>
+    <b>Readings</b>
+    <ul>
+        <li>APL - Air Pollution Level</li>
+        <li>AQI - Air Quality Index (AQI) of the dominant pollutant in city. Values are converted from µg/m³ to AQI level using US EPA standards. For more detailed information: https://en.wikipedia.org/wiki/Air_quality_index and https://www.airnow.gov/index.cfm?action=aqi_brochure.index. </li>
+        <li>CO-AQI - AQI of CO (carbon monoxide). An AQI of 100 for carbon monoxide corresponds to a level of 9 parts per million (averaged over 8 hours).</li>
+        <li>NO2-AQI - AQI of NO2 (nitrogen dioxide). See also https://www.airnow.gov/index.cfm?action=pubs.aqiguidenox</li>
+        <li>PM10-AQI - AQI of PM10 (respirable particulate matter). For particles up to 10 micrometers in diameter: An AQI of 100 corresponds to 150 micrograms per cubic meter (averaged over 24 hours).</li>
+        <li>PM2.5-AQI - AQI of PM2.5 (fine particulate matter). For particles up to 2.5 micrometers in diameter: An AQI of 100 corresponds to 35 micrograms per cubic meter (averaged over 24 hours).</li>
+        <li>O3-AQI - AQI of O3 (ozone). An AQI of 100 for ozone corresponds to an ozone level of 0.075 parts per million (averaged over 8 hours). See also https://www.airnow.gov/index.cfm?action=pubs.aqiguideozone</li>
+        <li>SO2-AQI - AQI of SO2 (sulfur dioxide). An AQI of 100 for sulfur dioxide corresponds to a level of 75 parts per billion (averaged over one hour).</li>
+        <li>temperature - Temperature in degrees Celsius</li>
+        <li>pressure - Atmospheric pressure in hectopascals (hPa)</li>
+        <li>humidity - Relative humidity in percent</li>
+        <li>state- Current AQI and air pollution level</li>
+        <li>status - condition of the data</li>
+        <li>pubDate- Local time of publishing the data</li>
+        <li>pubUnixTime - Unix time stamp of local time but converted wrongly, if local time is e.g. 1300 GMT+1, the time stamp shows 1300 UTC.</li>
+        <li>pubTimezone - Time zone of the city (UTC)</li>
+        <li>windspeed - Wind speed in kilometer per hour</li>
+        <li>windDirection - Wind direction</li>
+        <li>dominatPoll - Dominant pollutant in city</li>
+        <li>dewpoint - Dew in degrees Celsius</li>
+        <li>healthImplications - Information about Health Implications</li>
+        <li>htmlStyle - can be used to format the STATE and FHEMWEB (Example: stateFormate htmlStyle</li>
+    </ul>
+    <br>
+    <a name="Aqicnget"></a>
+    <b>get</b>
+    <ul>
+        <li>stationSearchByCity - search station by city name and open the result in seperate popup window</li>
+        <li>update - fetch new data every x times</li>
+    </ul>
+    <br>
+    <a name="Aqicnattribute"></a>
+    <b>Attribute</b>
+    <ul>
+        <li>interval - interval in seconds for automatically fetch data (default 3600)</li>
+    </ul>
 </ul>
 
 =end html
 =begin html_DE
 
 <a name="Aqicn"></a>
-<h3></h3>
+<h3>Air Quality Index</h3>
 
 =end html_DE
 =cut
