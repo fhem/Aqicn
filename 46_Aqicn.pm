@@ -62,7 +62,7 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.1.5";
+my $version = "0.1.8";
 
 
 
@@ -496,11 +496,15 @@ sub Aqicn_WriteReadings($$) {
         
         readingsBulkUpdateIfChanged($hash,'state',( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nde'}: $readings->{'PM2.5-AQI'}" : "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nen'}: $readings->{'PM2.5-AQI'}") );
         
+         readingsBulkUpdateIfChanged($hash,'APL',( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nde'}" : "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nen'}") );
+        
          readingsBulkUpdateIfChanged($hash,'healthImplications',Aqicn_HealthImplications($hash,Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})) );
     } else {
         readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'bgcolor'}.';">'.( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nde'}: $readings->{'AQI'} " : " $AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nen'}: $readings->{'AQI'}").'</div>');
     
         readingsBulkUpdateIfChanged($hash,'state',( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nde'}: $readings->{'AQI'}" : "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nen'}: $readings->{'AQI'}") );
+        
+        readingsBulkUpdateIfChanged($hash,'APL',( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nde'}" : "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nen'}") );
         
         readingsBulkUpdateIfChanged($hash,'healthImplications',Aqicn_HealthImplications($hash,Aqicn_AirPollutionLevel($readings->{'AQI'})) );
     }
