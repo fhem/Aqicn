@@ -69,12 +69,12 @@ my $version = "0.2.0";
 
 ### Air Quality Index scale
 my %AQIS = (
-            1   => { 'i18nde' => 'Gut'                                          ,'i18nen' => 'Good'                             ,'bgcolor' => '#009966','text' => '#FFFFFF'},
-            2   => { 'i18nde' => 'Moderat'                                      ,'i18nen' => 'Moderate'                         ,'bgcolor' => '#ffde33','text' => '#000000'},
-            3   => { 'i18nde' => 'Ungesund für empfindliche Personengruppen'    ,'i18nen' => 'Unhealthy for Sensitive Groups'   ,'bgcolor' => '#ff9933','text' => '#000000'},
-            4   => { 'i18nde' => 'Ungesund'                                     ,'i18nen' => 'Unhealthy'                        ,'bgcolor' => '#cc0033','text' => '#FFFFFF'},
-            5   => { 'i18nde' => 'Sehr ungesund'                                ,'i18nen' => 'Very Unhealthy'                   ,'bgcolor' => '#660099','text' => '#FFFFFF'},
-            6   => { 'i18nde' => 'Gefährlich'                                   ,'i18nen' => 'Hazardous'                        ,'bgcolor' => '#7e0023','text' => '#FFFFFF'},
+            1   => { 'i18nde' => 'Gut'                                          ,'i18nen' => 'Good'                             ,'bgcolor' => '#009966','font color' => '#FFFFFF'},
+            2   => { 'i18nde' => 'Moderat'                                      ,'i18nen' => 'Moderate'                         ,'bgcolor' => '#ffde33','font color' => '#000000'},
+            3   => { 'i18nde' => 'Ungesund für empfindliche Personengruppen'    ,'i18nen' => 'Unhealthy for Sensitive Groups'   ,'bgcolor' => '#ff9933','font color' => '#000000'},
+            4   => { 'i18nde' => 'Ungesund'                                     ,'i18nen' => 'Unhealthy'                        ,'bgcolor' => '#cc0033','font color' => '#FFFFFF'},
+            5   => { 'i18nde' => 'Sehr ungesund'                                ,'i18nen' => 'Very Unhealthy'                   ,'bgcolor' => '#660099','font color' => '#FFFFFF'},
+            6   => { 'i18nde' => 'Gefährlich'                                   ,'i18nen' => 'Hazardous'                        ,'bgcolor' => '#7e0023','font color' => '#FFFFFF'},
     );
 
 
@@ -492,7 +492,7 @@ sub Aqicn_WriteReadings($$) {
     }
     
     if( defined($readings->{'PM2.5-AQI'}) ) {
-        readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'bgcolor'}.';text= '.$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'text'}.';">'.( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nde'}: $readings->{'PM2.5-AQI'} " : " $AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nen'}: $readings->{'PM2.5-AQI'}").'</div>');
+        readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'bgcolor'}.';"><font color="'.$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'font color'}.'">'.( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nde'}: $readings->{'PM2.5-AQI'} " : " $AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nen'}: $readings->{'PM2.5-AQI'}").'</div>');
         
         readingsBulkUpdateIfChanged($hash,'state',( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nde'}: $readings->{'PM2.5-AQI'}" : "$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'i18nen'}: $readings->{'PM2.5-AQI'}") );
         
@@ -500,7 +500,7 @@ sub Aqicn_WriteReadings($$) {
         
          readingsBulkUpdateIfChanged($hash,'healthImplications',Aqicn_HealthImplications($hash,Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})) );
     } else {
-        readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'bgcolor'}.';">'.( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nde'}: $readings->{'AQI'} " : " $AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nen'}: $readings->{'AQI'}").'</div>');
+        readingsBulkUpdateIfChanged($hash,'htmlStyle','<div style="background-color: '.$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'bgcolor'}.';"><font color="'.$AQIS{Aqicn_AirPollutionLevel($readings->{'PM2.5-AQI'})}{'font color'}.'">'.( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nde'}: $readings->{'AQI'} " : " $AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nen'}: $readings->{'AQI'}").'</div>');
     
         readingsBulkUpdateIfChanged($hash,'state',( ((AttrVal('global','language','none') eq 'DE' or AttrVal($name,'language','none') eq 'de') and AttrVal($name,'language','none') ne 'en') ? "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nde'}: $readings->{'AQI'}" : "$AQIS{Aqicn_AirPollutionLevel($readings->{'AQI'})}{'i18nen'}: $readings->{'AQI'}") );
         
