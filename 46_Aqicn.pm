@@ -62,7 +62,7 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.2.0";
+my $version = "0.2.1";
 
 
 
@@ -70,12 +70,12 @@ my $version = "0.2.0";
 ### Air Quality Index scale
 my %AQIS = (
 
-            1   => { 'i18nde' => 'Gut'                                          ,'i18nen' => 'Good'                             ,'bgcolor' => '#009966','font color' => '#FFFFFF'},
-            2   => { 'i18nde' => 'Moderat'                                      ,'i18nen' => 'Moderate'                         ,'bgcolor' => '#ffde33','font color' => '#000000'},
-            3   => { 'i18nde' => 'Ungesund für empfindliche Personengruppen'    ,'i18nen' => 'Unhealthy for Sensitive Groups'   ,'bgcolor' => '#ff9933','font color' => '#000000'},
-            4   => { 'i18nde' => 'Ungesund'                                     ,'i18nen' => 'Unhealthy'                        ,'bgcolor' => '#cc0033','font color' => '#FFFFFF'},
-            5   => { 'i18nde' => 'Sehr ungesund'                                ,'i18nen' => 'Very Unhealthy'                   ,'bgcolor' => '#660099','font color' => '#FFFFFF'},
-            6   => { 'i18nde' => 'Gefährlich'                                   ,'i18nen' => 'Hazardous'                        ,'bgcolor' => '#7e0023','font color' => '#FFFFFF'},
+            1   => { 'i18nde' => 'Gut'                                          ,'i18nen' => 'Good'                             ,'bgcolor' => '#009966' ,'font color' => '#FFFFFF'},
+            2   => { 'i18nde' => 'Moderat'                                      ,'i18nen' => 'Moderate'                         ,'bgcolor' => '#ffde33' ,'font color' => '#000000'},
+            3   => { 'i18nde' => 'Ungesund für empfindliche Personengruppen'    ,'i18nen' => 'Unhealthy for Sensitive Groups'   ,'bgcolor' => '#ff9933' ,'font color' => '#000000'},
+            4   => { 'i18nde' => 'Ungesund'                                     ,'i18nen' => 'Unhealthy'                        ,'bgcolor' => '#cc0033' ,'font color' => '#FFFFFF'},
+            5   => { 'i18nde' => 'Sehr ungesund'                                ,'i18nen' => 'Very Unhealthy'                   ,'bgcolor' => '#660099' ,'font color' => '#FFFFFF'},
+            6   => { 'i18nde' => 'Gefährlich'                                   ,'i18nen' => 'Hazardous'                        ,'bgcolor' => '#7e0023' ,'font color' => '#FFFFFF'},
     );
 
 
