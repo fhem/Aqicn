@@ -62,7 +62,7 @@ eval "use Encode qw(encode encode_utf8 decode_utf8);1" or $missingModul .= "Enco
 eval "use JSON;1" or $missingModul .= "JSON ";
 
 
-my $version = "0.2.1";
+my $version = "0.4.0";
 
 
 
@@ -284,7 +284,8 @@ sub Aqicn_Notify($$) {
 
 
     Aqicn_Timer_GetData($hash) if( (grep /^INITIALIZED$/,@{$events}
-                                    or grep /^DELETEATTR.$name.disable$/,@{$events}
+                                    or grep /^REREADCFG$/,@{$events}
+                                    or grep /^MODIFIED.$name$/,@{$events}
                                     or (grep /^DEFINED.$name$/,@{$events} and $init_done))
                                     and defined($hash->{UID}) );
     return;
@@ -597,25 +598,31 @@ sub Aqicn_ReadingsProcessing_AqiResponse($) {
 
     my %readings;
 
+    
+    if( ref($decode_json->{data}) eq "HASH" ) {
 
-    $readings{'CO-AQI'}         = $decode_json->{data}{iaqi}{co}{v};
-    $readings{'NO2-AQI'}        = $decode_json->{data}{iaqi}{no2}{v};
-    $readings{'PM10-AQI'}       = $decode_json->{data}{iaqi}{pm10}{v};
-    $readings{'PM2.5-AQI'}      = $decode_json->{data}{iaqi}{pm25}{v};
-    $readings{'AQI'}            = $decode_json->{data}{aqi};
-    $readings{'O3-AQI'}         = $decode_json->{data}{iaqi}{o3}{v};
-    $readings{'SO2-AQI'}        = $decode_json->{data}{iaqi}{so2}{v};
-    $readings{'temperature'}    = $decode_json->{data}{iaqi}{t}{v};
-    $readings{'pressure'}       = $decode_json->{data}{iaqi}{p}{v};
-    $readings{'humidity'}       = $decode_json->{data}{iaqi}{h}{v};
-    $readings{'status'}         = $decode_json->{status};
-    $readings{'pubDate'}        = $decode_json->{data}{time}{s};
-    $readings{'pubUnixTime'}    = $decode_json->{data}{time}{v};
-    $readings{'pubTimezone'}    = $decode_json->{data}{time}{tz};
-    $readings{'windSpeed'}      = $decode_json->{data}{iaqi}{w}{v};
-    $readings{'windDirection'}  = $decode_json->{data}{iaqi}{wd}{v};
-    $readings{'dewpoint'}       = $decode_json->{data}{iaqi}{d}{v};
-    $readings{'dominatPoll'}    = $decode_json->{data}{dominentpol};
+        $readings{'CO-AQI'}         = $decode_json->{data}{iaqi}{co}{v};
+        $readings{'NO2-AQI'}        = $decode_json->{data}{iaqi}{no2}{v};
+        $readings{'PM10-AQI'}       = $decode_json->{data}{iaqi}{pm10}{v};
+        $readings{'PM2.5-AQI'}      = $decode_json->{data}{iaqi}{pm25}{v};
+        $readings{'AQI'}            = $decode_json->{data}{aqi};
+        $readings{'O3-AQI'}         = $decode_json->{data}{iaqi}{o3}{v};
+        $readings{'SO2-AQI'}        = $decode_json->{data}{iaqi}{so2}{v};
+        $readings{'temperature'}    = $decode_json->{data}{iaqi}{t}{v};
+        $readings{'pressure'}       = $decode_json->{data}{iaqi}{p}{v};
+        $readings{'humidity'}       = $decode_json->{data}{iaqi}{h}{v};
+        $readings{'status'}         = $decode_json->{status};
+        $readings{'pubDate'}        = $decode_json->{data}{time}{s};
+        $readings{'pubUnixTime'}    = $decode_json->{data}{time}{v};
+        $readings{'pubTimezone'}    = $decode_json->{data}{time}{tz};
+        $readings{'windSpeed'}      = $decode_json->{data}{iaqi}{w}{v};
+        $readings{'windDirection'}  = $decode_json->{data}{iaqi}{wd}{v};
+        $readings{'dewpoint'}       = $decode_json->{data}{iaqi}{d}{v};
+        $readings{'dominatPoll'}    = $decode_json->{data}{dominentpol};
+    
+    } else {
+        $readings{'status'}         = 'no hash reference found';
+    }
 
     return \%readings;
 }
@@ -623,6 +630,7 @@ sub Aqicn_ReadingsProcessing_AqiResponse($) {
 sub Aqicn_AirPollutionLevel($) {
 
     my $aqi = shift;
+    return 1 unless( defined($aqi) );
 
     my $apl;
 
